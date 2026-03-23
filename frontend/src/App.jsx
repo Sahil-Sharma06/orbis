@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { uploadCsv } from './api/client';
 import ChatPanel from './components/ChatPanel';
@@ -21,6 +21,16 @@ function App() {
 	const { chatHistory, sendMessage, loading: chatLoading } = useChat(activeBatch);
 
 	const graphData = useMemo(() => ({ nodes, edges }), [nodes, edges]);
+
+	useEffect(() => {
+		if (loadingBatches || !batches.length) {
+			return;
+		}
+
+		if (activeBatch === 'merged' && batches.length > 1) {
+			setActiveBatch(batches[batches.length - 1]);
+		}
+	}, [activeBatch, batches, loadingBatches]);
 
 	async function handleUpload(file) {
 		const result = await uploadCsv(file);
