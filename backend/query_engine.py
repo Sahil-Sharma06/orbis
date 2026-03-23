@@ -100,7 +100,9 @@ def _normalize_sql(sql: str, batch: str) -> str:
 		base = f"{base} WHERE batch_id = '{batch}'"
 
 	final_sql = f"{base} {tail}".strip()
-	return f"{final_sql};"
+	final_sql = _ensure_select_only(final_sql)
+	final_sql = _ensure_limit(final_sql, max_rows=200)
+	return f"{final_sql.rstrip(';')};"
 
 
 def _execute_sql(sql: str) -> list[dict[str, Any]]:
@@ -108,6 +110,37 @@ def _execute_sql(sql: str) -> list[dict[str, Any]]:
 		cursor = conn.execute(sql)
 		rows = cursor.fetchall()
 		return [dict(row) for row in rows]
+
+
+def _ensure_select_only(sql: str) -> str:
+	candidate = sql.strip()
+	lowered = candidate.lower()
+	if not lowered.startswith("select") and not lowered.startswith("with"):
+		raise ValueError("Only SELECT queries are allowed")
+
+	blocked = [
+		" insert ",
+		" update ",
+		" delete ",
+		" drop ",
+		" alter ",
+		" create ",
+		" attach ",
+		" detach ",
+		" pragma ",
+		" vacuum ",
+	]
+	wrapped = f" {lowered} "
+	if any(token in wrapped for token in blocked):
+		raise ValueError("Unsafe SQL operation detected")
+	return candidate
+
+
+def _ensure_limit(sql: str, max_rows: int = 200) -> str:
+	lowered = sql.lower()
+	if " limit " in f" {lowered} ":
+		return sql
+	return f"{sql.rstrip(';')} LIMIT {max_rows}"
 
 
 def _generate_grounded_answer(
