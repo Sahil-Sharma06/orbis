@@ -1,10 +1,12 @@
 ﻿from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import ensure_seeded, init_db
-from ingestion import ingest_csv_path
+from database import BASE_DIR, init_db, is_database_empty
+from ingestion import ingest_csv_path, ingest_sap_o2c_directory
 from routes import chat_router, graph_router, ingest_router
 
 
@@ -30,7 +32,15 @@ app.include_router(chat_router)
 @app.on_event("startup")
 def startup_event() -> None:
 	init_db()
-	ensure_seeded(seed_loader=lambda path: ingest_csv_path(path, batch_id="batch_1"))
+
+	if not is_database_empty():
+		return
+
+	sap_data_dir = BASE_DIR / "data" / "sap-o2c-data"
+	if sap_data_dir.exists() and any(sap_data_dir.rglob("*.jsonl")):
+		ingest_sap_o2c_directory(Path(sap_data_dir), batch_id="batch_1")
+	else:
+		ingest_csv_path(BASE_DIR / "data" / "seed.csv", batch_id="batch_1")
 
 
 @app.get("/health")
