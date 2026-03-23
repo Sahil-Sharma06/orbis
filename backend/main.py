@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import ensure_seeded, init_db
 from ingestion import ingest_csv_path
-from routes import graph_router, ingest_router
+from routes import chat_router, graph_router, ingest_router
 
 
 app = FastAPI(title="Orbis API", version="1.0.0")
@@ -24,6 +24,7 @@ app.add_middleware(
 
 app.include_router(ingest_router)
 app.include_router(graph_router)
+app.include_router(chat_router)
 
 
 @app.on_event("startup")

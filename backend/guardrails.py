@@ -1,1 +1,82 @@
-﻿# Off-topic query detection and rejection logic
+﻿from __future__ import annotations
+
+import os
+
+import google.generativeai as genai
+
+
+REJECTION_MESSAGE = (
+	"This system is designed to answer questions related to the provided dataset only."
+)
+
+ALLOWED_TOPICS = {
+	"order",
+	"orders",
+	"delivery",
+	"deliveries",
+	"invoice",
+	"invoices",
+	"payment",
+	"payments",
+	"customer",
+	"customers",
+	"product",
+	"products",
+	"billing",
+	"shipment",
+	"shipments",
+	"sales",
+	"purchase",
+	"purchases",
+	"revenue",
+	"supply chain",
+	"batch",
+}
+
+BLOCKED_PATTERNS = {
+	"write me a poem",
+	"who is the president",
+	"what is 2+2",
+	"tell me a joke",
+}
+
+
+def is_business_query(message: str) -> bool:
+	text = (message or "").strip().lower()
+	if not text:
+		return False
+
+	if any(pattern in text for pattern in BLOCKED_PATTERNS):
+		return False
+
+	if _contains_any_allowed_topic(text):
+		return True
+
+	return _classify_with_gemini(text)
+
+
+def _contains_any_allowed_topic(text: str) -> bool:
+	return any(topic in text for topic in ALLOWED_TOPICS)
+
+
+def _classify_with_gemini(text: str) -> bool:
+	api_key = os.getenv("GEMINI_API_KEY")
+	if not api_key:
+		# Fail closed if no keyword match and classifier is unavailable.
+		return False
+
+	genai.configure(api_key=api_key)
+	model = genai.GenerativeModel("gemini-1.5-flash")
+	prompt = (
+		"Classify the following user query as RELATED or NOT_RELATED to business data "
+		"analysis over orders, deliveries, invoices, payments, customers, products, "
+		"addresses, sales, billing, and supply chain. Respond with one token only: "
+		"RELATED or NOT_RELATED. Query: "
+		f"{text}"
+	)
+	try:
+		result = model.generate_content(prompt)
+		answer = (result.text or "").strip().upper()
+		return answer.startswith("RELATED")
+	except Exception:
+		return False
