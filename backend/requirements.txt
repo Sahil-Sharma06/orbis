@@ -1,7 +1,6 @@
 ﻿fastapi
 uvicorn
 pandas
-google-generativeai
 python-multipart
 sqlalchemy
 python-dotenv

@@ -3,12 +3,10 @@
 import json
 import os
 import re
-import sqlite3
 from typing import Any
 
-import google.generativeai as genai
-
 from database import get_connection
+from llm_client import DEFAULT_GROK_MODEL, grok_chat
 
 
 SCHEMA_DESCRIPTION = """
@@ -24,26 +22,59 @@ payments(payment_id, invoice_id, payment_date, amount, method, batch_id)
 
 
 def run_nl_query(message: str, batch: str = "merged") -> dict[str, Any]:
-	api_key = os.getenv("GEMINI_API_KEY")
+	api_key = os.getenv("GROK_API_KEY")
 	if not api_key:
 		return {
-			"response": "GEMINI_API_KEY is not configured. Please set it to enable chat queries.",
+			"response": "GROK_API_KEY is not configured. Please set it to enable chat queries.",
 			"sql": None,
 			"data": [],
 		}
 
-	genai.configure(api_key=api_key)
-	model = genai.GenerativeModel("gemini-1.5-flash")
+	try:
+		model_name = os.getenv("GROK_MODEL", DEFAULT_GROK_MODEL)
 
-	sql_payload = _generate_sql(model, message, batch)
-	sql = _normalize_sql(sql_payload.get("sql", ""), batch)
-	rows = _execute_sql(sql)
-	answer = _generate_grounded_answer(model, message, batch, sql, rows)
+		sql_payload = _generate_sql(message, batch, model_name)
+		sql = _normalize_sql(sql_payload.get("sql", ""), batch)
+		rows = _execute_sql(sql)
+		answer = _generate_grounded_answer(message, batch, sql, rows, model_name)
 
-	return {"response": answer, "sql": sql, "data": rows}
+		return {"response": answer, "sql": sql, "data": rows}
+	except Exception as exc:
+		return {
+			"response": _friendly_llm_error(str(exc)),
+			"sql": None,
+			"data": [],
+		}
 
 
-def _generate_sql(model, message: str, batch: str) -> dict[str, str]:
+def _friendly_llm_error(error_text: str) -> str:
+	text = (error_text or "").lower()
+	if "quota" in text or "429" in text or "rate limit" in text:
+		return (
+			"Grok quota is currently exhausted for this API key. "
+			"Please check xAI usage/billing or try again later."
+		)
+	if "401" in text or "unauthorized" in text or "invalid api key" in text:
+		return "Grok API key appears invalid or unauthorized. Please verify GROK_API_KEY."
+	if "403" in text or "does not have permission" in text or "credits" in text:
+		return (
+			"Grok API key is valid but this xAI team has no active credits/license. "
+			"Add credits in xAI console, then retry."
+		)
+	if "model" in text and "not found" in text:
+		return (
+			"Configured Grok model is unavailable for this key. "
+			"Set GROK_MODEL to a supported model, e.g. grok-3-mini."
+		)
+	if "404" in text and "chat/completions" in text:
+		return (
+			"xAI API endpoint is not reachable with current settings. "
+			"Check XAI_BASE_URL (default should be https://api.x.ai/v1)."
+		)
+	return "Unable to process the question with Grok right now. Please try again shortly."
+
+
+def _generate_sql(message: str, batch: str, model_name: str) -> dict[str, str]:
 	batch_context = (
 		"merged (all batches)" if batch == "merged" else f"batch_id = '{batch}'"
 	)
@@ -59,14 +90,16 @@ def _generate_sql(model, message: str, batch: str) -> dict[str, str]:
 		"user is in merged view."
 	)
 
-	result = model.generate_content(
-		[
-			{"role": "user", "parts": [system_prompt]},
-			{"role": "user", "parts": [f"User question: {message}"]},
-		]
+	raw_text = grok_chat(
+		messages=[
+			{"role": "system", "content": "You are a precise SQL generation assistant."},
+			{"role": "user", "content": system_prompt},
+			{"role": "user", "content": f"User question: {message}"},
+		],
+		model=model_name,
+		temperature=0,
 	)
 
-	raw_text = (result.text or "").strip()
 	payload = _extract_json(raw_text)
 	if "sql" not in payload:
 		raise ValueError("Model did not return SQL")
@@ -144,11 +177,11 @@ def _ensure_limit(sql: str, max_rows: int = 200) -> str:
 
 
 def _generate_grounded_answer(
-	model,
 	user_message: str,
 	batch: str,
 	sql: str,
 	rows: list[dict[str, Any]],
+	model_name: str,
 ) -> str:
 	prompt = (
 		"You are Orbis, a data analyst assistant. Generate a concise answer grounded "
@@ -159,8 +192,15 @@ def _generate_grounded_answer(
 		f"SQL: {sql}\n"
 		f"Rows: {json.dumps(rows)}"
 	)
-	response = model.generate_content(prompt)
-	return (response.text or "No answer available.").strip()
+	response = grok_chat(
+		[
+			{"role": "system", "content": "You are a grounded data analysis assistant."},
+			{"role": "user", "content": prompt},
+		],
+		model=model_name,
+		temperature=0.1,
+	)
+	return response or "No answer available."
 
 
 def _extract_json(raw_text: str) -> dict[str, str]:

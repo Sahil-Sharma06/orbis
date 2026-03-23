@@ -2,12 +2,14 @@
 
 import os
 
-import google.generativeai as genai
+from llm_client import grok_chat
 
 
 REJECTION_MESSAGE = (
 	"This system is designed to answer questions related to the provided dataset only."
 )
+
+DEFAULT_GROK_MODEL = "grok-3-mini"
 
 ALLOWED_TOPICS = {
 	"order",
@@ -52,21 +54,19 @@ def is_business_query(message: str) -> bool:
 	if _contains_any_allowed_topic(text):
 		return True
 
-	return _classify_with_gemini(text)
+	return _classify_with_grok(text)
 
 
 def _contains_any_allowed_topic(text: str) -> bool:
 	return any(topic in text for topic in ALLOWED_TOPICS)
 
 
-def _classify_with_gemini(text: str) -> bool:
-	api_key = os.getenv("GEMINI_API_KEY")
+def _classify_with_grok(text: str) -> bool:
+	api_key = os.getenv("GROK_API_KEY")
 	if not api_key:
 		# Fail closed if no keyword match and classifier is unavailable.
 		return False
 
-	genai.configure(api_key=api_key)
-	model = genai.GenerativeModel("gemini-1.5-flash")
 	prompt = (
 		"Classify the following user query as RELATED or NOT_RELATED to business data "
 		"analysis over orders, deliveries, invoices, payments, customers, products, "
@@ -75,8 +75,17 @@ def _classify_with_gemini(text: str) -> bool:
 		f"{text}"
 	)
 	try:
-		result = model.generate_content(prompt)
-		answer = (result.text or "").strip().upper()
+		answer = grok_chat(
+			messages=[
+				{
+					"role": "system",
+					"content": "You are an intent classifier. Return one token only: RELATED or NOT_RELATED.",
+				},
+				{"role": "user", "content": prompt},
+			],
+			model=os.getenv("GROK_MODEL", DEFAULT_GROK_MODEL),
+			temperature=0,
+		).strip().upper()
 		return answer.startswith("RELATED")
 	except Exception:
 		return False

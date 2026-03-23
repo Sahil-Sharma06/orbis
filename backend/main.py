@@ -4,10 +4,16 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 from database import BASE_DIR, init_db, is_database_empty
 from ingestion import ingest_csv_path, ingest_sap_o2c_directory
 from routes import chat_router, graph_router, ingest_router
+
+
+# Load env from workspace root first, then backend-local .env if present.
+load_dotenv(BASE_DIR.parent / ".env")
+load_dotenv(BASE_DIR / ".env")
 
 
 app = FastAPI(title="Orbis API", version="1.0.0")
@@ -17,6 +23,7 @@ app.add_middleware(
 	CORSMiddleware,
 	allow_origins=[
 		"http://localhost:5173",
+		"http://127.0.0.1:5173",
 		"https://your-vercel-app.vercel.app",
 	],
 	allow_credentials=True,
