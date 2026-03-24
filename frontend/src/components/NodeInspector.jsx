@@ -19,7 +19,7 @@ function NodeInspector({ selectedNode, onClose }) {
 	);
 
 	return (
-		<aside className="absolute right-6 top-6 z-10 w-full max-w-sm animate-in rounded-xl border border-gray-700 bg-gray-800 p-4 shadow-2xl">
+		<aside className="absolute right-6 top-6 z-10 w-full max-w-sm animate-slide-in rounded-xl border border-gray-700 bg-gray-800 p-4 shadow-2xl">
 			<div className="mb-3 flex items-start justify-between">
 				<div>
 					<h3 className="text-lg font-semibold text-white">Node Inspector</h3>
