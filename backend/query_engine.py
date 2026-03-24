@@ -6,7 +6,7 @@ import re
 from typing import Any
 
 from database import get_connection
-from llm_client import DEFAULT_GROK_MODEL, grok_chat
+from llm_client import DEFAULT_GEMINI_MODEL, gemini_chat
 
 
 SCHEMA_DESCRIPTION = """
@@ -22,16 +22,16 @@ payments(payment_id, invoice_id, payment_date, amount, method, batch_id)
 
 
 def run_nl_query(message: str, batch: str = "merged") -> dict[str, Any]:
-	api_key = os.getenv("GROK_API_KEY")
+	api_key = os.getenv("GEMINI_API_KEY")
 	if not api_key:
 		return {
-			"response": "GROK_API_KEY is not configured. Please set it to enable chat queries.",
+			"response": "GEMINI_API_KEY is not configured. Please set it to enable chat queries.",
 			"sql": None,
 			"data": [],
 		}
 
 	try:
-		model_name = os.getenv("GROK_MODEL", DEFAULT_GROK_MODEL)
+		model_name = os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
 
 		sql_payload = _generate_sql(message, batch, model_name)
 		sql = _normalize_sql(sql_payload.get("sql", ""), batch)
@@ -51,27 +51,27 @@ def _friendly_llm_error(error_text: str) -> str:
 	text = (error_text or "").lower()
 	if "quota" in text or "429" in text or "rate limit" in text:
 		return (
-			"Grok quota is currently exhausted for this API key. "
-			"Please check xAI usage/billing or try again later."
+			"Gemini quota is currently exhausted for this API key. "
+			"Please check Google AI usage/billing or try again later."
 		)
 	if "401" in text or "unauthorized" in text or "invalid api key" in text:
-		return "Grok API key appears invalid or unauthorized. Please verify GROK_API_KEY."
+		return "Gemini API key appears invalid or unauthorized. Please verify GEMINI_API_KEY."
 	if "403" in text or "does not have permission" in text or "credits" in text:
 		return (
-			"Grok API key is valid but this xAI team has no active credits/license. "
-			"Add credits in xAI console, then retry."
+			"Gemini API key is valid but this project has no active usage permission. "
+			"Enable billing/quotas in Google AI Studio or Google Cloud, then retry."
 		)
 	if "model" in text and "not found" in text:
 		return (
-			"Configured Grok model is unavailable for this key. "
-			"Set GROK_MODEL to a supported model, e.g. grok-3-mini."
+			"Configured Gemini model is unavailable for this key. "
+			"Set GEMINI_MODEL to a supported model, e.g. gemini-2.5-flash."
 		)
-	if "404" in text and "chat/completions" in text:
+	if "404" in text and "generatecontent" in text:
 		return (
-			"xAI API endpoint is not reachable with current settings. "
-			"Check XAI_BASE_URL (default should be https://api.x.ai/v1)."
+			"Gemini API endpoint is not reachable with current settings. "
+			"Check GEMINI_BASE_URL (default should be https://generativelanguage.googleapis.com/v1beta)."
 		)
-	return "Unable to process the question with Grok right now. Please try again shortly."
+	return "Unable to process the question with Gemini right now. Please try again shortly."
 
 
 def _generate_sql(message: str, batch: str, model_name: str) -> dict[str, str]:
@@ -90,7 +90,7 @@ def _generate_sql(message: str, batch: str, model_name: str) -> dict[str, str]:
 		"user is in merged view."
 	)
 
-	raw_text = grok_chat(
+	raw_text = gemini_chat(
 		messages=[
 			{"role": "system", "content": "You are a precise SQL generation assistant."},
 			{"role": "user", "content": system_prompt},
@@ -192,7 +192,7 @@ def _generate_grounded_answer(
 		f"SQL: {sql}\n"
 		f"Rows: {json.dumps(rows)}"
 	)
-	response = grok_chat(
+	response = gemini_chat(
 		[
 			{"role": "system", "content": "You are a grounded data analysis assistant."},
 			{"role": "user", "content": prompt},

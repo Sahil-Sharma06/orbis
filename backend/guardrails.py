@@ -2,14 +2,12 @@
 
 import os
 
-from llm_client import grok_chat
+from llm_client import DEFAULT_GEMINI_MODEL, gemini_chat
 
 
 REJECTION_MESSAGE = (
 	"This system is designed to answer questions related to the provided dataset only."
 )
-
-DEFAULT_GROK_MODEL = "grok-3-mini"
 
 ALLOWED_TOPICS = {
 	"order",
@@ -54,15 +52,15 @@ def is_business_query(message: str) -> bool:
 	if _contains_any_allowed_topic(text):
 		return True
 
-	return _classify_with_grok(text)
+	return _classify_with_gemini(text)
 
 
 def _contains_any_allowed_topic(text: str) -> bool:
 	return any(topic in text for topic in ALLOWED_TOPICS)
 
 
-def _classify_with_grok(text: str) -> bool:
-	api_key = os.getenv("GROK_API_KEY")
+def _classify_with_gemini(text: str) -> bool:
+	api_key = os.getenv("GEMINI_API_KEY")
 	if not api_key:
 		# Fail closed if no keyword match and classifier is unavailable.
 		return False
@@ -75,7 +73,7 @@ def _classify_with_grok(text: str) -> bool:
 		f"{text}"
 	)
 	try:
-		answer = grok_chat(
+		answer = gemini_chat(
 			messages=[
 				{
 					"role": "system",
@@ -83,7 +81,7 @@ def _classify_with_grok(text: str) -> bool:
 				},
 				{"role": "user", "content": prompt},
 			],
-			model=os.getenv("GROK_MODEL", DEFAULT_GROK_MODEL),
+			model=os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL),
 			temperature=0,
 		).strip().upper()
 		return answer.startswith("RELATED")
