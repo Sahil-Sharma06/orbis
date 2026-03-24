@@ -47,7 +47,7 @@ function UploadModal({ open, onClose, onUploaded }) {
 
 	return (
 		<div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4 backdrop-blur">
-			<div className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-800 p-6 shadow-2xl">
+			<div className="w-96 rounded-2xl border border-gray-700 bg-gray-800 p-6 shadow-2xl">
 				<div className="mb-4 flex items-center justify-between">
 					<h3 className="text-lg font-semibold text-white">Upload CSV</h3>
 					<button
