@@ -158,15 +158,15 @@ function GraphPanel({ nodes, edges, loading, error, onNodeSelect }) {
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center w-full h-full bg-gray-900 rounded-xl">
-				<div className="w-8 h-8 border-2 rounded-full animate-spin border-cyan-500 border-t-transparent" />
+			<div className="flex items-center justify-center w-full h-full bg-zinc-900/40 border border-zinc-800/80 rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
+				<div className="w-8 h-8 border-2 rounded-full animate-spin border-indigo-500 border-t-transparent" />
 			</div>
 		);
 	}
 
 	if (error) {
 		return (
-			<div className="flex items-center justify-center w-full h-full px-4 text-sm text-center text-red-300 bg-gray-900 rounded-xl">
+			<div className="flex items-center justify-center w-full h-full px-4 text-sm text-center text-red-300 bg-zinc-900/40 border border-zinc-800/80 rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
 				{error}
 			</div>
 		);
@@ -174,16 +174,16 @@ function GraphPanel({ nodes, edges, loading, error, onNodeSelect }) {
 
 	if (!nodes.length) {
 		return (
-			<div className="flex items-center justify-center w-full h-full px-4 text-sm text-center text-gray-400 bg-gray-900 rounded-xl">
+			<div className="flex items-center justify-center w-full h-full px-4 text-sm text-center text-zinc-400 bg-zinc-900/40 border border-zinc-800/80 rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
 				No graph data found for this batch.
 			</div>
 		);
 	}
 
 	return (
-		<div className="relative w-full h-full bg-gray-900 rounded-xl">
-			<div ref={containerRef} className="w-full h-full bg-gray-900 rounded-xl" />
-			<div className="absolute px-2 py-1 text-xs text-gray-300 border border-gray-700 rounded-md pointer-events-none left-3 top-3 bg-gray-950/85">
+		<div className="relative w-full h-full bg-zinc-900/40 border border-zinc-800/80 rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
+			<div ref={containerRef} className="w-full h-full bg-zinc-900/40 border border-zinc-800/80 rounded-xl shadow-sm backdrop-blur-sm overflow-hidden" />
+			<div className="absolute px-2 py-1 text-xs text-zinc-300 border border-zinc-700 rounded-md pointer-events-none left-3 top-3 bg-zinc-950/85">
 				{visibleNodes.length}/{nodes.length} nodes, {visibleEdges.length}/{edges.length} edges
 				{isVeryLargeGraph
 					? ' - performance mode (order items hidden)'

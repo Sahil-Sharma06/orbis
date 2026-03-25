@@ -47,12 +47,12 @@ function UploadModal({ open, onClose, onUploaded }) {
 
 	return (
 		<div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4 backdrop-blur">
-			<div className="w-96 rounded-2xl border border-gray-700 bg-gray-800 p-6 shadow-2xl">
+			<div className="w-96 rounded-2xl border border-zinc-700 bg-zinc-800 p-6 shadow-2xl shadow-black/50">
 				<div className="mb-4 flex items-center justify-between">
 					<h3 className="text-lg font-semibold text-white">Upload CSV</h3>
 					<button
 						type="button"
-						className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
+						className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-700"
 						onClick={resetAndClose}
 					>
 						Close
@@ -66,13 +66,13 @@ function UploadModal({ open, onClose, onUploaded }) {
 					}}
 					onDragLeave={() => setDragOver(false)}
 					onDrop={onDrop}
-					className={`rounded-xl border-2 border-dashed p-6 text-center transition ${
-						dragOver ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-600 bg-gray-900'
+					className={`rounded-xl shadow-sm border-2 border-dashed p-6 text-center transition ${
+						dragOver ? 'border-indigo-500 bg-indigo-500/10' : 'border-zinc-600 bg-zinc-900'
 					}`}
 				>
-					<p className="text-sm text-gray-300">Drag and drop CSV here</p>
-					<p className="my-2 text-xs text-gray-500">or</p>
-					<label className="inline-flex cursor-pointer rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+					<p className="text-sm text-zinc-300">Drag and drop CSV here</p>
+					<p className="my-2 text-xs text-zinc-500">or</p>
+					<label className="inline-flex cursor-pointer rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
 						Choose File
 						<input
 							type="file"
@@ -90,7 +90,7 @@ function UploadModal({ open, onClose, onUploaded }) {
 					type="button"
 					onClick={handleUpload}
 					disabled={!file || loading}
-					className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+					className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{loading ? 'Uploading...' : 'Upload'}
 				</button>
